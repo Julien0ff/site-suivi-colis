@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { Hexagon } from "lucide-react";
 
@@ -9,7 +10,7 @@ import { Hexagon } from "lucide-react";
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="animate-fade-in flex w-full max-w-sm flex-col items-center gap-8 rounded-[var(--radius-card)] border border-border bg-surface p-10 shadow-card-hover">
         {/* Logo */}
         <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-foreground">
@@ -41,10 +42,17 @@ export default function LoginPage() {
           Sign in with Discord
         </button>
 
-        <p className="text-[10px] text-muted">
-          Your Discord account will be used for authentication and DM
-          notifications.
-        </p>
+        <div className="text-center space-y-3 mt-2">
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            En vous connectant, vous acceptez nos{" "}
+            <Link href="/cgu" className="text-foreground underline hover:text-neon-purple transition-colors">CGU</Link>
+            {" "}et notre{" "}
+            <Link href="/politique-confidentialite" className="text-foreground underline hover:text-neon-purple transition-colors">Politique de confidentialité</Link>.
+          </p>
+          <div className="flex items-center justify-center gap-4 text-[10px]">
+            <Link href="/mentions-legales" className="text-muted-foreground hover:text-foreground transition-colors">Mentions Légales</Link>
+          </div>
+        </div>
       </div>
     </div>
   );
