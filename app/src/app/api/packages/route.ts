@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { trackingService } from "@/lib/tracking/service";
+import { sendDiscordNotification } from "@/lib/discord/notifier";
 import { auth } from "@/lib/auth";
 
 // ═══════════════════════════════════════════════════════════
@@ -81,8 +82,9 @@ export async function POST(request: NextRequest) {
     let courierName = body.courierName || "Unknown Carrier";
     let status = "packed";
 
-    if (courierCode === "amazon") {
+    if (courierCode === "amazon" || trackingNumber.toUpperCase().startsWith("TBA") || trackingNumber.toUpperCase().startsWith("FR")) {
       courierName = "Amazon Logistics";
+      courierCode = "amazon";
     } else if (courierCode === "manual") {
       courierName = "Manual Entry";
     } else {
@@ -125,6 +127,25 @@ export async function POST(request: NextRequest) {
 
     const docRef = await packagesRef.add(newPkg);
     
+    // Send Discord DM if enabled
+    try {
+      const userDoc = await adminDb.collection("users").doc(discordId).get();
+      if (userDoc.exists && userDoc.data()?.discordDmEnabled) {
+        await sendDiscordNotification({
+          discordId,
+          trackingNumber,
+          previousStatus: "none",
+          newStatus: "added",
+          origin: newPkg.origin,
+          destination: newPkg.destination,
+          courierName: newPkg.courierName,
+          customer: newPkg.customer,
+        });
+      }
+    } catch (e) {
+      console.warn("[API] Failed to send initial Discord DM", e);
+    }
+
     return NextResponse.json({ package: { id: docRef.id, ...newPkg } }, { status: 201 });
   } catch (error) {
     console.error("[API] Error creating package:", error);

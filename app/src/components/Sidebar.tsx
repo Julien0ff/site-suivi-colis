@@ -81,6 +81,13 @@ export default function Sidebar() {
             Logout
           </span>
         </button>
+
+        {/* Legal Links (Desktop only) */}
+        <div className="hidden md:flex flex-col items-center gap-1 mt-2 mb-2">
+          <Link href="/cgu" className="text-[9px] text-sidebar-accent/40 hover:text-sidebar-accent transition-colors" title="CGU">CGU</Link>
+          <Link href="/politique-confidentialite" className="text-[9px] text-sidebar-accent/40 hover:text-sidebar-accent transition-colors" title="Confidentialité">RGPD</Link>
+          <Link href="/mentions-legales" className="text-[9px] text-sidebar-accent/40 hover:text-sidebar-accent transition-colors" title="Mentions Légales">Légal</Link>
+        </div>
       </nav>
     </aside>
   );

@@ -2,7 +2,7 @@
 
 import { Package } from "@/lib/types";
 import StatusBadge from "./StatusBadge";
-import { Phone, MessageCircle, Trash2 } from "lucide-react";
+import { Phone, MessageCircle, Trash2, ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { useMemo, useState } from "react";
 import { usePackages } from "@/contexts/PackageContext";
 
@@ -61,6 +61,7 @@ function calculateProgress(pkg: Package): number {
 export default function PackageCard({ pkg }: PackageCardProps) {
   const { deletePackage } = usePackages();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const progress = useMemo(() => calculateProgress(pkg), [pkg]);
 
   const handleDelete = async () => {
@@ -227,6 +228,62 @@ export default function PackageCard({ pkg }: PackageCardProps) {
             >
               <MessageCircle className="h-3.5 w-3.5" strokeWidth={2} />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Expand/Collapse Timeline Button */}
+      {pkg.events && pkg.events.length > 0 && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-[10px] py-2 text-xs font-medium text-muted hover:bg-surface-alt hover:text-foreground transition-colors"
+        >
+          {isExpanded ? (
+            <>
+              Hide Timeline <ChevronUp className="h-4 w-4" />
+            </>
+          ) : (
+            <>
+              Show Timeline ({pkg.events.length} events) <ChevronDown className="h-4 w-4" />
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Timeline View */}
+      {isExpanded && pkg.events && pkg.events.length > 0 && (
+        <div className="mt-4 animate-fade-in border-t border-border pt-4">
+          <div className="space-y-6 pl-2">
+            {pkg.events.map((event: any, idx: number) => (
+              <div key={idx} className="relative flex gap-4">
+                {/* Timeline Line */}
+                {idx !== pkg.events.length - 1 && (
+                  <div className="absolute left-[7px] top-6 h-[calc(100%-8px)] w-[2px] bg-border" />
+                )}
+                {/* Timeline Dot */}
+                <div className="relative z-10 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2 border-foreground bg-surface mt-1" />
+                
+                <div className="flex flex-col pb-2">
+                  <span className="text-xs font-bold text-foreground">{event.status || "UPDATE"}</span>
+                  <span className="text-xs text-muted-foreground mt-0.5">{event.description}</span>
+                  <div className="mt-1.5 flex items-center gap-3 text-[10px] text-muted">
+                    {event.location && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" /> {event.location}
+                      </span>
+                    )}
+                    {event.timestamp && (
+                      <span>{new Date(event.timestamp).toLocaleString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

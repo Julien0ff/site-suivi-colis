@@ -22,6 +22,7 @@ interface PackageNotification {
 
 // Status-based embed colors (Discord uses decimal color values)
 const STATUS_COLORS: Record<string, number> = {
+  added: 0x6366f1, // Indigo
   packed: 0xa855f7, // Purple
   in_transit: 0x22c55e, // Green
   out_for_delivery: 0xf59e0b, // Amber
@@ -31,6 +32,7 @@ const STATUS_COLORS: Record<string, number> = {
 };
 
 const STATUS_EMOJIS: Record<string, string> = {
+  added: "🆕",
   packed: "📦",
   in_transit: "🚚",
   out_for_delivery: "🏃",
@@ -76,17 +78,21 @@ export async function sendDiscordNotification(
       value: `${notification.origin} → ${notification.destination}`,
       inline: false,
     },
-    {
-      name: "⏮️ Previous Status",
-      value: `~~${notification.previousStatus}~~`,
-      inline: true,
-    },
-    {
-      name: `${emoji} New Status`,
-      value: `**${notification.newStatus.toUpperCase()}**`,
-      inline: true,
-    },
   ];
+
+  if (notification.previousStatus && notification.previousStatus !== "none") {
+    fields.push({
+      name: "⏮️ Previous Status",
+      value: `~~${notification.previousStatus.toUpperCase()}~~`,
+      inline: true,
+    });
+  }
+
+  fields.push({
+    name: `${emoji} New Status`,
+    value: `**${notification.newStatus.toUpperCase()}**`,
+    inline: true,
+  });
 
   if (notification.customer) {
     fields.push({
@@ -97,8 +103,10 @@ export async function sendDiscordNotification(
   }
 
   const embed = {
-    title: `${emoji} Package Status Update`,
-    description: `Package **${notification.trackingNumber}** has changed status.`,
+    title: notification.newStatus === "added" ? "🆕 Package Added" : `${emoji} Package Status Update`,
+    description: notification.newStatus === "added" 
+      ? `You are now tracking package **${notification.trackingNumber}**.` 
+      : `Package **${notification.trackingNumber}** has changed status.`,
     color,
     fields,
     footer: {
