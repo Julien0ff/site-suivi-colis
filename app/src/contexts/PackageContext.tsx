@@ -27,7 +27,7 @@ interface PackageContextType {
   // Actions
   selectPackage: (pkg: Package) => void;
   setSearchQuery: (query: string) => void;
-  addPackage: (trackingNumber: string, courierId?: string) => Promise<void>;
+  addPackage: (trackingNumber: string, courierId?: string, details?: { description?: string }) => Promise<void>;
   deletePackage: (id: string) => Promise<void>;
   markNotificationsRead: () => void;
 }
@@ -85,7 +85,7 @@ export function PackageProvider({ children }: { children: ReactNode }) {
 
   // ── Add a new package ──
   const addPackage = useCallback(
-    async (trackingNumber: string, courierId?: string) => {
+    async (trackingNumber: string, courierId?: string, details?: { description?: string }) => {
       if (packages.some((p) => p.trackingNumber === trackingNumber)) {
         console.warn("Package already tracked:", trackingNumber);
         return;
@@ -95,7 +95,7 @@ export function PackageProvider({ children }: { children: ReactNode }) {
         const res = await fetch("/api/packages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ trackingNumber, courierId }),
+          body: JSON.stringify({ trackingNumber, courierId, ...details }),
         });
 
         if (res.ok) {

@@ -121,6 +121,18 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+
+        {/* Legal Information Section */}
+        <div className="rounded-[var(--radius-card)] border border-border bg-surface shadow-card">
+          <div className="border-b border-border p-5">
+            <h3 className="font-semibold text-foreground">Informations Légales</h3>
+          </div>
+          <div className="p-5 flex flex-col sm:flex-row gap-4 sm:gap-8">
+            <a href="/cgu" className="text-sm text-muted-foreground hover:text-foreground transition-colors underline decoration-border underline-offset-4">Conditions Générales (CGU)</a>
+            <a href="/politique-confidentialite" className="text-sm text-muted-foreground hover:text-foreground transition-colors underline decoration-border underline-offset-4">Politique de Confidentialité</a>
+            <a href="/mentions-legales" className="text-sm text-muted-foreground hover:text-foreground transition-colors underline decoration-border underline-offset-4">Mentions Légales</a>
+          </div>
+        </div>
       </div>
     </div>
   );

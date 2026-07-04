@@ -8,6 +8,7 @@ export default function AddPackageForm() {
   const { addPackage } = usePackages();
   const [trackingNumber, setTrackingNumber] = useState("");
   const [courierId, setCourierId] = useState("auto");
+  const [description, setDescription] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<{
@@ -24,10 +25,11 @@ export default function AddPackageForm() {
     setFeedback(null);
 
     try {
-      await addPackage(value, courierId === "auto" ? undefined : courierId);
+      await addPackage(value, courierId === "auto" ? undefined : courierId, { description: description.trim() || undefined });
       setFeedback({ type: "success", message: `Added ${value}` });
       setTrackingNumber("");
       setCourierId("auto");
+      setDescription("");
       // Clear feedback after 3s
       setTimeout(() => setFeedback(null), 3000);
     } catch {
@@ -64,6 +66,17 @@ export default function AddPackageForm() {
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             placeholder="Tracking Number"
+            className="w-full flex-1 bg-transparent text-xs font-medium text-foreground placeholder:text-muted outline-none"
+            disabled={isLoading}
+          />
+        </div>
+
+        <div className="flex w-full items-center rounded-[var(--radius-input)] border border-border bg-surface px-3.5 py-2.5 transition-all duration-200">
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description (e.g., iPhone 15 Pro)"
             className="w-full flex-1 bg-transparent text-xs font-medium text-foreground placeholder:text-muted outline-none"
             disabled={isLoading}
           />

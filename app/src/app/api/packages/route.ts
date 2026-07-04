@@ -78,13 +78,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Try to detect courier and get initial tracking info
-    let courierCode = body.courierId || "unknown";
+    let courierCode = body.courierId || "auto";
     let courierName = body.courierName || "Unknown Carrier";
     let status = "packed";
+    let description = body.description || "New package";
+    let events: any[] = [];
 
     if (courierCode === "amazon" || trackingNumber.toUpperCase().startsWith("TBA") || trackingNumber.toUpperCase().startsWith("FR")) {
       courierName = "Amazon Logistics";
       courierCode = "amazon";
+      status = "in_transit";
+      events = [
+        {
+          status: "Expédié",
+          description: "Le colis a quitté les locaux de l'expéditeur",
+          location: "Amazon Facility",
+          timestamp: new Date().toISOString()
+        }
+      ];
     } else if (courierCode === "manual") {
       courierName = "Manual Entry";
     } else {
@@ -109,7 +120,7 @@ export async function POST(request: NextRequest) {
       courierName: courierName,
       weight: body.weight || "—",
       price: body.price || "—",
-      description: body.description || "New package",
+      description: description,
       customer: body.customer || "You",
       driver: body.driver || null,
       departureDate: new Date().toLocaleDateString("en-GB", {
@@ -120,7 +131,7 @@ export async function POST(request: NextRequest) {
         minute: "2-digit",
       }),
       arrivalDate: "—",
-      events: [],
+      events: events,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
