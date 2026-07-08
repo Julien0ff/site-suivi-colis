@@ -159,8 +159,26 @@ class TrackingMoreProvider implements TrackingProvider {
       );
     }
 
-    const data = await response.json();
-    const tracking = data.data?.[0]; // TrackingMore returns an array in data
+    let data = await response.json();
+    let tracking = data.data?.[0]; // TrackingMore returns an array in data
+
+    if (!tracking || data.meta?.code === 404 || data.meta?.code === 400) {
+      const courierCode = await this.detectCourier(trackingNumber);
+      if (courierCode) {
+        const createRes = await fetch(`${this.baseUrl}/trackings/create`, {
+          method: "POST",
+          headers: {
+            "Tracking-Api-Key": this.apiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ tracking_number: trackingNumber, courier_code: courierCode }),
+        });
+        const createData = await createRes.json();
+        if (createData.meta?.code === 200 || createData.meta?.code === 201) {
+          tracking = createData.data;
+        }
+      }
+    }
 
     if (!tracking) {
       throw new Error("No tracking data found in TrackingMore response");
@@ -223,19 +241,14 @@ class TrackingService {
   private providers: TrackingProvider[] = [];
 
   constructor() {
+    if (process.env.TRACKINGMORE_API_KEY) {
+      this.providers.push(new TrackingMoreProvider(process.env.TRACKINGMORE_API_KEY));
+    }
     // Initialize providers based on available API keys
     if (process.env.AFTERSHIP_API_KEY) {
       this.providers.push(
         new AfterShipProvider(process.env.AFTERSHIP_API_KEY)
       );
-    }
-
-    // Add more providers here:
-    // if (process.env.SHIP24_API_KEY) {
-    //   this.providers.push(new Ship24Provider(process.env.SHIP24_API_KEY));
-    // }
-    if (process.env.TRACKINGMORE_API_KEY) {
-      this.providers.push(new TrackingMoreProvider(process.env.TRACKINGMORE_API_KEY));
     }
   }
 

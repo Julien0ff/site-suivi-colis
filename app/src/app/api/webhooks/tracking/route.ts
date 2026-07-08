@@ -35,6 +35,7 @@ interface AfterShipWebhookPayload {
 }
 
 const STATUS_MAP: Record<string, string> = {
+  // AfterShip
   Pending: "PACKED",
   InfoReceived: "PACKED",
   InTransit: "IN_TRANSIT",
@@ -44,22 +45,57 @@ const STATUS_MAP: Record<string, string> = {
   AvailableForPickup: "OUT_FOR_DELIVERY",
   Exception: "EXCEPTION",
   Expired: "EXCEPTION",
+  // TrackingMore
+  pending: "PACKED",
+  notfound: "PACKED",
+  transit: "IN_TRANSIT",
+  pickup: "OUT_FOR_DELIVERY",
+  outfordelivery: "OUT_FOR_DELIVERY",
+  delivered: "DELIVERED",
+  undelivered: "EXCEPTION",
+  exception: "EXCEPTION",
+  expired: "EXCEPTION",
 };
 
 export async function POST(request: NextRequest) {
   try {
-    const payload: AfterShipWebhookPayload = await request.json();
+    const payload: any = await request.json();
 
-    if (payload.event !== "tracking_update") {
-      return NextResponse.json({ message: "Event ignored" }, { status: 200 });
+    let trackingNumber: string;
+    let tag: string;
+    let originCity: string | undefined;
+    let originCountry: string | undefined;
+    let destCity: string | undefined;
+    let destCountry: string | undefined;
+    let coords: { latitude: number; longitude: number } | undefined;
+
+    // Check if it's AfterShip webhook
+    if (payload.event === "tracking_update" && payload.msg) {
+      const tracking = payload.msg;
+      trackingNumber = tracking.tracking_number;
+      tag = tracking.tag;
+      originCity = tracking.origin_city;
+      originCountry = tracking.origin_country_iso3;
+      destCity = tracking.destination_city;
+      destCountry = tracking.destination_country_iso3;
+      coords = tracking.checkpoints?.[0]?.coordinates;
+      console.log(`[Webhook] Received AfterShip update for ${trackingNumber}: ${tag}`);
+    } 
+    // Check if it's TrackingMore webhook
+    else if (payload.data && payload.data.tracking_number) {
+      const tracking = payload.data;
+      trackingNumber = tracking.tracking_number;
+      tag = tracking.delivery_status;
+      originCity = tracking.origin_city;
+      originCountry = tracking.origin_country;
+      destCity = tracking.destination_city;
+      destCountry = tracking.destination_country;
+      // Coordinates are not always present in TrackingMore webhook root, usually in trackinfo
+      coords = undefined; 
+      console.log(`[Webhook] Received TrackingMore update for ${trackingNumber}: ${tag}`);
+    } else {
+      return NextResponse.json({ message: "Event ignored or unknown payload" }, { status: 200 });
     }
-
-    const tracking = payload.msg;
-    const trackingNumber = tracking.tracking_number;
-
-    console.log(
-      `[Webhook] Received update for ${trackingNumber}: ${tracking.tag}`
-    );
 
     // Find the package in Firestore across all users
     const packagesSnapshot = await adminDb.collectionGroup("packages")
@@ -79,21 +115,19 @@ export async function POST(request: NextRequest) {
     // Process each user tracking this package
     for (const doc of packagesSnapshot.docs) {
       const existingPackage = doc.data();
-      const newStatus = (STATUS_MAP[tracking.tag] || "IN_TRANSIT").toLowerCase();
+      const newStatus = (STATUS_MAP[tag] || "IN_TRANSIT").toLowerCase();
       const previousStatus = existingPackage.status;
 
       if (newStatus === previousStatus) {
         continue;
       }
 
-      const latestCheckpoint = tracking.checkpoints?.[0];
-
       // Update package
       await doc.ref.update({
         status: newStatus,
-        currentCoords: latestCheckpoint?.coordinates ? {
-          lat: latestCheckpoint.coordinates.latitude,
-          lng: latestCheckpoint.coordinates.longitude
+        currentCoords: coords ? {
+          lat: coords.latitude,
+          lng: coords.longitude
         } : null,
         updatedAt: new Date().toISOString()
       });
@@ -108,14 +142,8 @@ export async function POST(request: NextRequest) {
             trackingNumber,
             previousStatus,
             newStatus,
-            origin:
-              tracking.origin_city ||
-              tracking.origin_country_iso3 ||
-              existingPackage.origin,
-            destination:
-              tracking.destination_city ||
-              tracking.destination_country_iso3 ||
-              existingPackage.destination,
+            origin: originCity || originCountry || existingPackage.origin,
+            destination: destCity || destCountry || existingPackage.destination,
             courierName: existingPackage.courierName,
             customer: existingPackage.customer || undefined,
           });
